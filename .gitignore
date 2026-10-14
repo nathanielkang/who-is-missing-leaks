@@ -1,0 +1,15 @@
+# Runtime outputs. Do not publish ledgers or microdata.
+results/
+results_*/
+data/
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+.env
+*.log
+*.csv
+*.json
+.DS_Store
+Thumbs.db
