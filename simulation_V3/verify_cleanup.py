@@ -324,9 +324,13 @@ def solve_lp(kind, lo, hi, E, objective):
         Q0, Q1, tau, tS = fn(lo, hi, E, objective)
     finally:
         lps.clean_pair = real
-    if 'raw' not in holder:
-        raise RuntimeError('clean_pair was not called')
-    return holder['raw'], (np.asarray(Q0, float), np.asarray(Q1, float)), np.asarray(tau, float), float(tS)
+    if 'raw' in holder:
+        raw = holder['raw']
+    elif getattr(lps, '_last_raw', None) is not None:
+        raw = lps._last_raw
+    else:
+        raise RuntimeError('neither clean_pair nor _last_raw captured the solver vector')
+    return raw, (np.asarray(Q0, float), np.asarray(Q1, float)), np.asarray(tau, float), float(tS)
 
 
 def empty_row(**kw):
@@ -822,11 +826,13 @@ def main():
     ap.add_argument('--max-seeds', type=int, default=None, help='if set, run exactly this many MC seeds (0..n-1) and skip the 30-min rule')
     ap.add_argument('--nproc', type=int, default=12)
     ap.add_argument('--only', default='', choices=['', 'joint'])
+    ap.add_argument('--tag', default='')
     args = ap.parse_args()
     os.makedirs(OUTDIR, exist_ok=True)
     if args.only:
         os.environ['VERIFY_ONLY'] = args.only
-    tag = f'_{args.only}' if args.only else ''
+    parts = [p for p in (args.only, args.tag) if p]
+    tag = ('_' + '_'.join(parts)) if parts else ''
     log_path = os.path.join(OUTDIR, f'verify_cleanup{tag}_{DATE}.log')
     detail_path = os.path.join(OUTDIR, f'verify_cleanup{tag}_detail_{DATE}.csv')
     summary_path = os.path.join(OUTDIR, f'verify_cleanup{tag}_summary_{DATE}.json')
