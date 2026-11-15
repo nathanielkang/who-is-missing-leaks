@@ -2,7 +2,7 @@
 # Survey protection suite: accounting, theory checks, and the synthetic grid.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-CODE="$ROOT/im_missingness_v6"
+CODE="$ROOT/accounting"
 export WM1_OUT="$ROOT/results"
 export WM1_NHANES="$ROOT/data/n1516.csv"
 mkdir -p "$WM1_OUT" "$ROOT/logs"
@@ -22,13 +22,13 @@ run() {
   echo "===== DONE $name ($((SECONDS - t0))s) ====="
 }
 
-run v6_theory_checks v6_theory_checks.py
-run v4_theory_checks v4_theory_checks.py
-run v4_synthetic_table v4_synthetic_table.py
-run v4_nhanes_accounting v4_nhanes_accounting.py
-run missingness_nhanes_analysis missingness_nhanes_analysis.py
+run protection_theory_checks protection_theory_checks.py
+run theory_checks theory_checks.py
+run synthetic_table synthetic_table.py
+run nhanes_accounting nhanes_accounting.py
+run nhanes_flag_analysis nhanes_flag_analysis.py
 REPS="${WM1_REPS:-100}"
-run v6_nhanes_protection v6_nhanes_protection.py "$WM1_NHANES" "$REPS"
+run nhanes_protection nhanes_protection.py "$WM1_NHANES" "$REPS"
 run make_table2 make_table2.py
 echo "ALL_DONE $(date -Is)"
 ls -la "$WM1_OUT"

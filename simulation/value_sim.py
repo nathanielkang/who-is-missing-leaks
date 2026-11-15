@@ -35,7 +35,7 @@ from sim import (
 # Optional source for complete-respondent CSVs. Prefer files already under data/.
 ATT_DIR = os.environ.get('WM1_COMPLETE_VALUES_DIR', '')
 DATA_DIR = os.path.join(HERE, 'data')
-OUT_DIR = os.path.join(HERE, 'results_V3')
+OUT_DIR = os.path.join(HERE, 'results')
 LPS_PATH = os.path.join(HERE, 'lps.py')
 
 # Array fields written per (replication, slot, band). Keep in sync with the meta list.

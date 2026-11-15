@@ -1,4 +1,4 @@
-"""Core routines for 'Who Is Missing Leaks' experiments (V3_C re-implementation)."""
+"""Core routines for 'Who Is Missing Leaks' experiments ."""
 import numpy as np
 from scipy.optimize import linprog
 from scipy import sparse as sp

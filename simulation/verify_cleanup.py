@@ -8,7 +8,7 @@ event of every instance, and every event on the NHANES grid, is recomputed
 with scipy.optimize.linprog and the absolute gap is stored.
 Product box: q(t) is multilinear in the rates, so extrema are the 16 vertices.
 
-Does not modify manuscript TeX. Reads data/nhanes_counts.npy. Writes results_V3/.
+Does not modify manuscript TeX. Reads data/nhanes_counts.npy. Writes results/.
 """
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ CLAIMED = {'exprod', 'exjoint_f', 'exjoint_t', 'balprod', 'block'}
 FIELDS = ('family_income', 'alcohol', 'systolic_bp', 'waist')
 BANDS = ('20-39', '40-59', '60+')
 DATE = '2026-11-15'
-OUTDIR = os.path.join(HERE, 'results_V3')
+OUTDIR = os.path.join(HERE, 'results')
 OPT_LP = {'primal_feasibility_tolerance': FEAS, 'dual_feasibility_tolerance': FEAS}
 OPTIMAL = int(hs.HighsModelStatus.kOptimal)
 

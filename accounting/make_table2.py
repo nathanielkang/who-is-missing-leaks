@@ -3,7 +3,7 @@ import json
 import sys
 from _path_bootstrap import out_path
 
-src = sys.argv[1] if len(sys.argv) > 1 else str(out_path("v6_nhanes_protection.json"))
+src = sys.argv[1] if len(sys.argv) > 1 else str(out_path("nhanes_protection.json"))
 P = json.load(open(src))
 order = ["raw", "blind", "point", "prodbal", "lp_rect", "lp_box", "blk_box", "known_field", "known_task", "oracle"]
 label = {

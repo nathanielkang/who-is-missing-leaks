@@ -26,7 +26,7 @@ import pandas as pd
 from _path_bootstrap import ROOT, out_path, ukhls_dir_or_csv
 
 sys.path.insert(0, str(ROOT))
-from v4_lib import two_sided_level
+from core_lib import two_sided_level
 
 
 def _find_col(cols, *needles):

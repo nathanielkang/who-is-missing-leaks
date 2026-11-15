@@ -1,8 +1,8 @@
-"""Numerical checks for Research Note 2, version 4 (missingness_note_v4.tex).
+"""Numerical checks for the availability-accounting note.
 
 Every theorem, corollary and proposition of Section 2 is checked on random finite
 instances, together with the worked examples and table values quoted in the note.
-Run:  python3 v4_theory_checks.py   (numpy, scipy)
+Run:  python3 theory_checks.py   (numpy, scipy)
 """
 import itertools, json, math, sys
 import numpy as np
@@ -401,7 +401,7 @@ for it in range(25):
     ok_hom &= best <= homog_U(3, E, c, L) + 1e-9 and best >= homog_U(3, E, c, L) - 2 * L / 120 - 1e-9
 check("Thm5(iii): homogeneous allocation formula vs grid search (K=3)", ok_hom)
 
-# GPT-v3 synthetic table: balanced (Thm 5(iii)) and blind (exact product family, equal keeping prob.)
+# Synthetic table: balanced (Thm 5(iii)) and blind (exact product family, equal keeping prob.)
 def blind_U(K, E, l0, l1, c):
     best = 0.0
     for m in range(1, K + 1):
@@ -430,7 +430,7 @@ check("Thm5 synthetic table values reproduced", ok_tab)
 
 
 # ---------------------------------------------------------------- Theorem 6: cardinality bound and exact robust LP
-from v4_lib import robust_faithful_lp, balanced_allocation, transport_policy, product_kernel, two_sided_level, released_law
+from core_lib import robust_faithful_lp, balanced_allocation, transport_policy, product_kernel, two_sided_level, released_law
 
 
 def policy_q(Qp, h, kap, K):
@@ -578,7 +578,7 @@ check("Prop1 Gaussian profile values (1.993/2.218/2.043; 4.377/4.492/4.416)",
       all(abs(a - b) < 1.5e-3 for a, b in zip(gauss[0.5] + gauss[1.0], (1.993, 2.218, 2.043, 4.377, 4.492, 4.416))))
 
 print("\n%d/%d checks passed" % (sum(RES.values()), len(RES)))
-_out = out_path("v4_theory_checks.json")
+_out = out_path("theory_checks.json")
 json.dump({"results": RES, "numbers": NUM}, open(_out, "w"), indent=1, default=float)
 print("wrote", _out, flush=True)
 sys.exit(0 if all(RES.values()) else 1)

@@ -153,6 +153,6 @@ for Y in ["noncit", "lowedu", "smoke"]:
         % (Y, auc0, auc1, ll0, ll1, odds_nr)
     )
 
-_out = out_path("v4_flag_attack.json")
+_out = out_path("nhanes_flag_attack.json")
 json.dump(ledger, open(_out, "w"), indent=1)
 print("wrote", _out)

@@ -1,13 +1,13 @@
-"""Additional numerical checks for version 6 (joint tasks, two response models, risk).
-The checks of version 4 (v4_theory_checks.py) cover Proposition 1, Theorems 1-5, Corollary 1 and Proposition 3.
-Run: python3 v6_theory_checks.py
+"""Additional numerical checks for joint tasks, two response models, and risk.
+Companion theory_checks.py covers Proposition 1, Theorems 1-5, Corollary 1 and Proposition 3.
+Run: python3 protection_theory_checks.py
 """
 import itertools, json, math, sys
 import numpy as np
 from scipy.stats import binom
 from _path_bootstrap import ROOT, out_path
 sys.path.insert(0, str(ROOT))
-from v6_lib import (patterns, product_law, rect_vertices, task_lp, full_record_level, F_front, robust_faithful_lp,
+from protection_lib import (patterns, product_law, rect_vertices, task_lp, full_record_level, F_front, robust_faithful_lp,
                     kernel_from_dict, released_law, two_sided_level, product_kernel)
 
 rng = np.random.default_rng(20261011)
@@ -34,7 +34,7 @@ def exact_product_loss(t0, t1, l0, l1, c):
     return best
 
 
-# 1. the task program with singleton tasks reproduces the version-4 program
+# 1. the task program with singleton tasks reproduces the field-wise robust program
 ok = True
 for it in range(15):
     K = 3; c = rng.uniform(1.02, 1.4, K); l0 = np.array([rng.uniform(0.3, 1 / x) for x in c]); l1 = np.array([rng.uniform(0.3, 1 / x) for x in c])
@@ -42,9 +42,9 @@ for it in range(15):
     v_old, _ = robust_faithful_lp(K, E, l0, l1, c)
     v_new, _ = task_lp(K, E, {0: ("finite", rect_vertices(l0, c)), 1: ("finite", rect_vertices(l1, c))}, [(k,) for k in range(K)])
     ok &= abs(v_old - v_new) < 1e-7
-check("task program with singleton tasks equals the version-4 program", ok)
+check("task program with singleton tasks equals the field-wise robust program", ok)
 
-# 2. version-5 finite examples
+# 2. finite portfolio examples
 V = {0: ("finite", rect_vertices(np.full(3, .8), np.full(3, 1.1))), 1: ("finite", rect_vertices(np.full(3, .7), np.full(3, 1.1)))}
 port = {}
 for E in (0.2, 0.3, 0.5):
@@ -176,7 +176,7 @@ for it in range(2000):
 check("Thm8: P(N_S < n tau/2) <= exp(-n tau/8) for binomial N_S with mean >= n tau", ok_ch)
 
 print("\n%d/%d checks passed" % (sum(RES.values()), len(RES)))
-_out = out_path("v6_theory_checks.json")
+_out = out_path("protection_theory_checks.json")
 json.dump({"results": RES, "numbers": NUM}, open(_out, "w"), indent=1, default=float)
 print("wrote", _out, flush=True)
 sys.exit(0 if all(RES.values()) else 1)

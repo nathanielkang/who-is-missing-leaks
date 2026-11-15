@@ -1,6 +1,6 @@
 import os
 HERE = os.path.dirname(os.path.abspath(__file__))
-"""Survey-calibrated certification simulation (Table 'prot'), re-implemented for V3_C."""
+"""Survey-calibrated certification simulation (Table 'prot')."""
 import sys, time, json, numpy as np, multiprocessing as mp
 sys.path.insert(0, HERE)
 from core import *; from lps import *

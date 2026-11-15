@@ -54,7 +54,7 @@ Survey and census extracts stay local. Point the scripts at them with environmen
 ```bash
 export WM1_NHANES=/path/to/n1516.csv
 export WM1_ACS=/path/to/acs_ca2021_adults.csv
-bash run_all_im_v6.sh
+bash run_all.sh
 ```
 
 Census public-use microdata can be turned into the adult extract with:
@@ -66,25 +66,25 @@ python scripts/build_acs_pums_extract.py /path/to/psam_p06.csv
 ## Layout
 
 ```
-im_missingness_v6/   accounting, protection, and theory checks
-simulation_V3/       tables, theory checks, matched-budget value experiment
-scripts/             smoke check and census extract builder
-docs/figures/        method figures
+accounting/     accounting, protection, and theory checks
+simulation/     survey tables, theory checks, matched-budget value experiment
+scripts/        smoke check and census extract builder
+docs/figures/   method figures
 ```
 
-## Simulation V3
+## Simulation
 
-The folder `simulation_V3/` reproduces the survey-calibrated tables and the matched total-budget optional-value experiment. Run it from that folder. Survey and census microdata stay local under `simulation_V3/data/` (gitignored). Aggregated counts such as `nhanes_counts.npy` can be rebuilt with `nh_table1.py`.
+The folder `simulation/` reproduces the survey-calibrated tables and the matched total-budget optional-value experiment. Run it from that folder. Survey and census microdata stay local under `simulation/data/` (gitignored). Aggregated counts such as `nhanes_counts.npy` can be rebuilt with `nh_table1.py`.
 
 ```bash
-cd simulation_V3
+cd simulation
 python verify_theory.py
 python sim.py 0 1000 2 chunk0.json
 python value_sim.py --reps 50
 # full NHANES matched-budget run: python value_sim.py --reps 5000
 ```
 
-Optional flags for `value_sim.py`: `--seed0`, `--procs`, `--tag`, `--skip-selfcheck`. Set `WM1_COMPLETE_VALUES_DIR` if the complete-respondent CSVs are outside `data/`. Ledgers under `results_V3/` stay local and are not published.
+Optional flags for `value_sim.py`: `--seed0`, `--procs`, `--tag`, `--skip-selfcheck`. Set `WM1_COMPLETE_VALUES_DIR` if the complete-respondent CSVs are outside `data/`. Ledgers under `simulation/results/` stay local and are not published.
 
 ## Notes
 

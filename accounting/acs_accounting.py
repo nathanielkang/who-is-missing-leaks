@@ -17,7 +17,7 @@ from _path_bootstrap import acs_csv, out_path, ROOT
 import sys
 
 sys.path.insert(0, str(ROOT))
-from v4_lib import patterns, two_sided_level
+from core_lib import patterns, two_sided_level
 
 warnings.filterwarnings("ignore")
 rng = np.random.default_rng(20261011)
@@ -116,7 +116,7 @@ out["joint_level"] = float(two_sided_level(k0, k1))
 # independence product of field rates
 g1 = np.array([out["fields"][i]["g1"] for i in range(K)])
 g0 = np.array([out["fields"][i]["g0"] for i in range(K)])
-from v4_lib import product_law
+from core_lib import product_law
 
 out["independence_level"] = float(two_sided_level(product_law(g0), product_law(g1)))
 _out = out_path("acs_accounting.json")

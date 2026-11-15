@@ -16,7 +16,6 @@ DATA_CANDIDATES = [
     Path(os.environ["WM1_NHANES"]) if os.environ.get("WM1_NHANES") else None,
     ROOT / ".." / "data" / "n1516.csv",
     ROOT / "n1516.csv",
-    Path("/home/claude/nhanes/n1516.csv"),
 ]
 
 

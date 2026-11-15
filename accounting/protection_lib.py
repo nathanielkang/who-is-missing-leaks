@@ -1,4 +1,4 @@
-"""Shared routines for the v4 note: faithful erasure policies, robust programs, evaluation."""
+"""Shared routines: faithful erasure policies, robust programs, evaluation."""
 import itertools, math
 import numpy as np
 from scipy.optimize import linprog
@@ -265,3 +265,119 @@ def np_power(null, alt, fpr):
         else:
             frac = (fpr - spent) / null[i]; power += frac * alt[i]; break
     return power
+
+
+# ------------------------------------------------------------------ task objectives and two response models
+def rect_vertices(l, c):
+    """product laws at the vertices of prod_k [l_k, c_k l_k]."""
+    K = len(l)
+    return [product_law(np.array(v)) for v in itertools.product(*[(l[k], c[k] * l[k]) for k in range(K)])]
+
+
+def task_lp(K, E, classes, tasks, weights=None, objective="sum", within=False, blind=False):
+    """Exact optimum over all faithful policies Q_h(t|r) (the faithful-policy theorem).
+    classes[h] = ('finite', [laws]) : candidate laws (e.g. rectangle vertices, or hidden types in model C)
+               = ('box', lo, hi)    : joint laws in a box intersected with the simplex (LP duality)
+    tasks: list of tuples S of field indices; tau_S = min_h inf_class P(S subset T).
+    objective 'sum': max sum_S w_S tau_S ;  'min': max z s.t. tau_S >= z (weights act as service levels d_S).
+    within=True adds comparisons inside each group (model C, full-record privacy)."""
+    R = patterns(K); nR = len(R); H = sorted(classes)
+    weights = [1.0] * len(tasks) if weights is None else list(weights)
+    idx = {}
+    for h in H:
+        for i, r in enumerate(R):
+            for j, t in enumerate(R):
+                if all(t[k] <= r[k] for k in range(K)): idx[(h, i, j)] = len(idx)
+    nQ = len(idx); extra = {}
+    def newvar(name):
+        extra[name] = nQ + len(extra); return extra[name]
+    cons = []
+    def coeff_event(h, js):  # per raw pattern i: dict of Q-variables whose sum is P(T in js | r_i)
+        return [{idx[(h, i, j)]: 1.0 for j in js if (h, i, j) in idx} for i in range(nR)]
+    def bound_vars(h, coeff, tag):
+        """create M >= sup_class sum_i kappa_i coeff_i(Q) and m <= inf_class (...)"""
+        M = newvar(("M",) + tag); m = newvar(("m",) + tag)
+        kind = classes[h][0]
+        if kind == "finite":
+            for kap in classes[h][1]:
+                f = {}
+                for i in range(nR):
+                    if kap[i] <= 0: continue
+                    for a, b in coeff[i].items(): f[a] = f.get(a, 0.0) + kap[i] * b
+                d1 = dict(f); d1[M] = d1.get(M, 0) - 1.0; cons.append(d1)
+                d2 = {a: -b for a, b in f.items()}; d2[m] = 1.0; cons.append(d2)
+        else:
+            lo, hi = classes[h][1], classes[h][2]
+            al = [newvar(("al",) + tag + (i,)) for i in range(nR)]; be = [newvar(("be",) + tag + (i,)) for i in range(nR)]
+            lam = newvar(("lam",) + tag)
+            for i in range(nR):
+                d = dict(coeff[i]); d[al[i]] = -1.0; d[be[i]] = 1.0; d[lam] = -1.0; cons.append(d)
+            d = {al[i]: hi[i] for i in range(nR)}
+            for i in range(nR): d[be[i]] = -lo[i]
+            d[lam] = 1.0; d[M] = -1.0; cons.append(d)
+            al2 = [newvar(("al2",) + tag + (i,)) for i in range(nR)]; be2 = [newvar(("be2",) + tag + (i,)) for i in range(nR)]
+            lam2 = newvar(("lam2",) + tag)
+            for i in range(nR):
+                d = {a: -b for a, b in coeff[i].items()}; d[lam2] = 1.0; d[be2[i]] = 1.0; d[al2[i]] = -1.0; cons.append(d)
+            d = {be2[i]: -lo[i] for i in range(nR)}
+            for i in range(nR): d[al2[i]] = d.get(al2[i], 0) + hi[i]
+            d[lam2] = -1.0; d[m] = 1.0; cons.append(d)
+        return M, m
+    for j in range(nR):
+        Mm = {h: bound_vars(h, coeff_event(h, [j]), ("atom", h, j)) for h in H}
+        for h in H:
+            for g in H:
+                if h != g or within:
+                    cons.append({Mm[h][0]: 1.0, Mm[g][1]: -math.exp(E)})
+    taus = []
+    for s, S in enumerate(tasks):
+        tau = newvar(("tau", s)); taus.append(tau)
+        js = [j for j, t in enumerate(R) if all(t[k] for k in S)]
+        for h in H:
+            M, m = bound_vars(h, coeff_event(h, js), ("task", h, s))
+            cons.append({tau: 1.0, m: -1.0})
+    if objective == "min":
+        z = newvar(("z",))
+        for s, tau in enumerate(taus): cons.append({z: weights[s], tau: -1.0})
+    nv = nQ + len(extra)
+    A = np.zeros((len(cons), nv))
+    for i, d in enumerate(cons):
+        for a, b in d.items(): A[i, a] += b
+    eqs = []
+    for h in H:
+        for i in range(nR):
+            row = np.zeros(nv)
+            for j in range(nR):
+                if (h, i, j) in idx: row[idx[(h, i, j)]] = 1.0
+            eqs.append((row, 1.0))
+    if blind:
+        for (h, i, j), col in idx.items():
+            if h == H[0]:
+                for g in H[1:]:
+                    row = np.zeros(nv); row[col] = 1.0; row[idx[(g, i, j)]] = -1.0; eqs.append((row, 0.0))
+    cobj = np.zeros(nv)
+    if objective == "min": cobj[extra[("z",)]] = -1.0
+    else:
+        for s, tau in enumerate(taus): cobj[tau] = -weights[s]
+    bounds = [(0, None)] * nQ + [((None, None) if nm[0] in ("lam", "lam2") else (0, None)) for nm in extra]
+    r = lp(cobj, A, np.zeros(len(cons)), np.array([e[0] for e in eqs]), np.array([e[1] for e in eqs]), bounds)
+    if r.status != 0: return None, None
+    return -r.fun, {key: max(0.0, r.x[col]) for key, col in idx.items()}
+
+
+def full_record_level(Qd, K, laws, within=True, tol=1e-8):
+    """two-sided level over all pairs of candidate laws (laws: dict h -> list of pattern laws)."""
+    Q = kernel_from_dict(Qd, K)
+    outs = [(h, released_law(kap, Q[h])) for h in laws for kap in laws[h]]
+    lev = 0.0
+    for h, a in outs:
+        for g, b in outs:
+            if h == g and not within: continue
+            lev = max(lev, two_sided_level(a, b, tol))
+    return lev
+
+
+def F_front(E, L, C):
+    if C <= 1 + 1e-15: return L
+    if E < math.log(C) - 1e-12: return 0.0
+    return min(L, (math.exp(E) - 1) / (C * math.exp(E) - 1))

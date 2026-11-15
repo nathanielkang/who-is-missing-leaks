@@ -1,14 +1,14 @@
 """NHANES 2015-2016 public extract: leakage of four availability indicators about citizenship (Section 3.2).
 Fields: family income ratio (INDFMPIR), alcohol questionnaire (ALQ101), systolic blood pressure (BPXSY1),
 waist circumference (BMXWAIST). Driver: not a U.S. citizen (DMDCITZN=2), observed for everyone.
-Run: python3 -I v4_nhanes_accounting.py /home/claude/nhanes/n1516.csv
+Run: python3 -I nhanes_accounting.py /path/to/n1516.csv
 """
 import sys, json, math, itertools, warnings
 import numpy as np, pandas as pd
 import statsmodels.api as sm
 from _path_bootstrap import nhanes_csv, out_path, ROOT
 sys.path.insert(0, str(ROOT))
-from v4_lib import patterns
+from core_lib import patterns
 from scipy.optimize import linprog
 warnings.filterwarnings("ignore")
 rng = np.random.default_rng(2026)
@@ -149,6 +149,6 @@ for f in F:
     print("noncitizen share among %s nonrespondents %.3f (n=%d)" % (f, d.loc[nr, "H"].mean(), nr.sum()))
 allmiss = (d[["R_" + f for f in F]].sum(1) <= 1)
 print("noncitizen share among those missing at least three of four fields %.3f (n=%d)" % (d.loc[allmiss, "H"].mean(), allmiss.sum()))
-_out = out_path("v4_nhanes_accounting.json")
+_out = out_path("nhanes_accounting.json")
 json.dump(out, open(_out, "w"), indent=1, default=float)
 print("wrote", _out, flush=True)

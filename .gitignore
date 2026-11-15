@@ -13,3 +13,7 @@ venv/
 *.json
 .DS_Store
 Thumbs.db
+
+# Local-only leftovers (not part of the public tree)
+_local_diag/
+simulation_V3/

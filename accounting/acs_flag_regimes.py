@@ -20,7 +20,7 @@ import pandas as pd
 from _path_bootstrap import ROOT, acs_csv, out_path
 
 sys.path.insert(0, str(ROOT))
-from v4_lib import (
+from core_lib import (
     kernel_from_dict,
     patterns,
     released_law,

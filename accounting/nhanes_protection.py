@@ -4,15 +4,15 @@ indicators (income, alcohol, blood pressure, waist) estimated from the 5,449 exa
 A calibration sample of size m * n_{x,h} is drawn from the truth; simultaneous Clopper-Pearson intervals at total
 level beta = 0.05 give (a) per-field rectangles (product model) and (b) cellwise boxes for the joint law.
 Policies are designed from the calibration sample only and evaluated exactly under the truth.
-Version 6 adds the four-field joint task (exact program with joint boxes), the known-law optimum at the same budget
-for both objectives, and the complete-case rate. The random draws, and hence the version-4 rows, are unchanged.
-Run: python3 -I v6_nhanes_protection.py /home/claude/nhanes/n1516.csv REPS
+The suite includes the four-field joint task (exact program with joint boxes), the known-law optimum at the same
+budget for both objectives, and the complete-case rate.
+Run: python3 -I nhanes_protection.py /path/to/n1516.csv REPS
 """
 import sys, json, math, time
 import numpy as np, pandas as pd
 from _path_bootstrap import nhanes_csv, out_path, ROOT
 sys.path.insert(0, str(ROOT))
-from v6_lib import (patterns, robust_faithful_lp, kernel_from_dict, product_kernel, released_law, two_sided_level,
+from protection_lib import (patterns, robust_faithful_lp, kernel_from_dict, product_kernel, released_law, two_sided_level,
                     transport_policy, balanced_allocation, cp_interval, np_power, task_lp)
 
 reps = int(sys.argv[2]) if len(sys.argv) > 2 else 100
@@ -151,6 +151,6 @@ if __name__ == "__main__":
                       % (name, s["level"], s["level_median"], s["violation"], s["retained"], s["complete"], s["guaranteed_complete"], s["U"], s["shift"], s["tpr"]), flush=True)
     res["population_share"] = float(sum(Px[x] * Ph_x[(x, 1)] for x in X))
     res["raw"] = raw_metrics
-    _out = out_path("v6_nhanes_protection.json")
+    _out = out_path("nhanes_protection.json")
     json.dump(res, open(_out, "w"), indent=1)
     print("wrote", _out, flush=True)

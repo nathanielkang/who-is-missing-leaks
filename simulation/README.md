@@ -7,7 +7,7 @@ Python 3.13, numpy 2.5, scipy 1.18 (HiGHS). 이 폴더에서 실행.
 | `nh_table1.py` | 표 I 점추정, `data/nhanes_counts.npy` 생성 | `python3 nh_table1.py <nhanes_2015_2016.csv 경로>` |
 | `nh_boot.py` | 표 I 부트스트랩 구간 | `python3 nh_boot.py 10000 10000` |
 | `sim.py` → `sim_summary.py` | 표 II, 정리 5 평가 | `python3 sim.py 0 1000 2 chunk0.json` (시드 0–999, 프로세스 2개) … `python3 sim_summary.py chunk*.json` |
-| `acs.py` | 표 III·IV | `python3 acs.py reported 10000` (V2 설계: `all`) |
+| `acs.py` | 표 III·IV | `python3 acs.py reported 10000` |
 | `extra.py` | 수송 세부 수치(1인당 보류 개수 등) | `python3 extra.py` |
 | `synth.py` | 표 V, 탈락, self-masking | `python3 synth.py 100000` |
 | `verify_theory.py` | 닫힌 형태의 수치 검증 | `python3 verify_theory.py` |
