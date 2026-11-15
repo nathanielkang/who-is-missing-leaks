@@ -67,9 +67,24 @@ python scripts/build_acs_pums_extract.py /path/to/psam_p06.csv
 
 ```
 im_missingness_v6/   accounting, protection, and theory checks
+simulation_V3/       tables, theory checks, matched-budget value experiment
 scripts/             smoke check and census extract builder
 docs/figures/        method figures
 ```
+
+## Simulation V3
+
+The folder `simulation_V3/` reproduces the survey-calibrated tables and the matched total-budget optional-value experiment. Run it from that folder. Survey and census microdata stay local under `simulation_V3/data/` (gitignored). Aggregated counts such as `nhanes_counts.npy` can be rebuilt with `nh_table1.py`.
+
+```bash
+cd simulation_V3
+python verify_theory.py
+python sim.py 0 1000 2 chunk0.json
+python value_sim.py --reps 50
+# full NHANES matched-budget run: python value_sim.py --reps 5000
+```
+
+Optional flags for `value_sim.py`: `--seed0`, `--procs`, `--tag`, `--skip-selfcheck`. Set `WM1_COMPLETE_VALUES_DIR` if the complete-respondent CSVs are outside `data/`. Ledgers under `results_V3/` stay local and are not published.
 
 ## Notes
 
