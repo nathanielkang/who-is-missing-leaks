@@ -58,9 +58,9 @@ def clean_pair(Q0, Q1, tol=1e-6):
             Qv[j] += 1.0 - Qv[js].sum()
     return Qs[0], Qs[1]
 
-def exact_product_box(lo, hi, E, objective='fields'):
+def _product_build(lo, hi, E, objective, fix):
     """lo,hi: arrays [h,k] of the box for response probabilities (independent indicators)."""
-    lp = LP(); Q = _policy_vars(lp)
+    lp = LP(); Q = _policy_vars(lp); _freeze_patterns(lp, Q, fix)
     U = [lp.var(NP, 0.0, None), lp.var(NP, 0.0, None)]
     Lw = [lp.var(NP, 0.0, None), lp.var(NP, 0.0, None)]
     tau = lp.var(K, 0.0, None); tauS = lp.var(1, 0.0, None)
@@ -82,7 +82,11 @@ def exact_product_box(lo, hi, E, objective='fields'):
         lp.le([U[0][t], Lw[1][t]], [1.0, -eE]); lp.le([U[1][t], Lw[0][t]], [1.0, -eE])
     return _solve_lex(lp, Q, tau, tauS, objective)
 
+def exact_product_box(lo, hi, E, objective='fields'):
+    return _certify_support(lambda fix, lo=lo, hi=hi, E=E, objective=objective: _product_build(lo, hi, E, objective, fix), lo, hi, E, objective)
+
 def _solve_lex(lp, Q, tau, tauS, objective):
+    """Lexicographic solve. Returns the raw solver vectors; no post-hoc cleanup."""
     o_f = np.zeros(lp.nv); o_f[tau] = 1.0
     o_s = np.zeros(lp.nv); o_s[tauS] = 1.0
     if objective == 'fields':
@@ -95,8 +99,64 @@ def _solve_lex(lp, Q, tau, tauS, objective):
         res = lp.solve(o_f)
     assert res.status == 0, res.message
     x = res.x
-    Qa, Qb = clean_pair(x[Q[0]], x[Q[1]])
-    return Qa, Qb, x[tau].copy(), float(x[tauS][0])
+    return x[Q[0]].copy(), x[Q[1]].copy(), x[tau].copy(), float(x[tauS][0])
+
+
+def _freeze_patterns(lp, Q, patterns):
+    """Fix Q_h(t|r)=0 for every dropped released pattern t."""
+    for t in patterns:
+        js = J_BY_T[int(t)]
+        for h in range(2):
+            for j in js:
+                lp.lb[int(Q[h][int(j)])] = 0.0
+                lp.ub[int(Q[h][int(j)])] = 0.0
+
+
+def _positive_dropped(Q0, Q1, tol=1e-6):
+    """Patterns clean_pair would zero that still carry positive clipped mass."""
+    Qs = [np.clip(np.asarray(Q0, float), 0.0, 1.0), np.clip(np.asarray(Q1, float), 0.0, 1.0)]
+    dropped = []
+    for t in range(NP):
+        js = J_BY_T[t]
+        if min(float(Qs[0][js].max()), float(Qs[1][js].max())) < tol:
+            if float(Qs[0][js].sum() + Qs[1][js].sum()) > 0.0:
+                dropped.append(t)
+    return dropped
+
+
+def _renorm_rows(Q0, Q1):
+    """Clip to [0,1] and scale each conditional row to sum to 1. No argmax dump."""
+    Qs = [np.clip(np.asarray(Q, float), 0.0, 1.0).copy() for Q in (Q0, Q1)]
+    for Qv in Qs:
+        for r in range(NP):
+            js = np.where(R_OF == r)[0]
+            s = float(Qv[js].sum())
+            if s <= 1e-15:
+                Qv[js] = 0.0
+                Qv[SUBIDX[(r, 0)]] = 1.0
+            else:
+                Qv[js] /= s
+    return Qs[0], Qs[1]
+
+
+def _certify_support(build, lo, hi, E, objective):
+    """Solve, freeze patterns that cleanup would drop, re-solve, then row-scale.
+
+    build(fix) -> raw Q0, Q1, tau, tauS. The second solve, when needed, is the
+    same LP with those Q variables fixed at 0. Scaling is the only post-processing.
+    _last_raw is the pre-scale vector of the solve that is returned.
+    """
+    global _last_raw
+    raw0, raw1, tau, tS = build(())
+    fix = _positive_dropped(raw0, raw1)
+    if fix:
+        raw0, raw1, tau, tS = build(fix)
+    _last_raw = (np.array(raw0, float, copy=True), np.array(raw1, float, copy=True))
+    Q0, Q1 = _renorm_rows(raw0, raw1)
+    return Q0, Q1, tau, tS
+
+
+_last_raw = None
 
 def _robust_max(lp, lo, hi, cols, coefs_by_r, target_col, sign=+1):
     """adds:  max_{kappa in joint box} sum_r kappa_r a_r  <= target   (sign=+1)
@@ -122,9 +182,9 @@ def _robust_max(lp, lo, hi, cols, coefs_by_r, target_col, sign=+1):
         for i in range(n):
             lp.le(np.concatenate([mu, [al[i]], [be[i]], cc[i]]), np.concatenate([[1.0, -1.0, 1.0], -np.asarray(cf[i])]))
 
-def exact_joint_box(lo, hi, E, objective='fields'):
+def _joint_build(lo, hi, E, objective, fix):
     """lo,hi: arrays [h, 16] of intervals for the pattern probabilities of each group."""
-    lp = LP(); Q = _policy_vars(lp)
+    lp = LP(); Q = _policy_vars(lp); _freeze_patterns(lp, Q, fix)
     U = [lp.var(NP, 0.0, None), lp.var(NP, 0.0, None)]
     Lw = [lp.var(NP, 0.0, None), lp.var(NP, 0.0, None)]
     tau = lp.var(K, 0.0, None); tauS = lp.var(1, 0.0, None)
@@ -151,6 +211,9 @@ def exact_joint_box(lo, hi, E, objective='fields'):
     for t in range(NP):
         lp.le([U[0][t], Lw[1][t]], [1.0, -eE]); lp.le([U[1][t], Lw[0][t]], [1.0, -eE])
     return _solve_lex(lp, Q, tau, tauS, objective)
+
+def exact_joint_box(lo, hi, E, objective='fields'):
+    return _certify_support(lambda fix, lo=lo, hi=hi, E=E, objective=objective: _joint_build(lo, hi, E, objective, fix), lo, hi, E, objective)
 
 def transport_zero(k0, k1, w=None):
     """Theorem transport: max E w(R0 ^ R1) over couplings; lexicographic second objective: P(R0^R1 = all)."""
